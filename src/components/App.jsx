@@ -1,66 +1,68 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import ContactList from "./ContactsList/ContactsList";
 import ContactForm from "./ContactForm/ContactForm";
 import Filter from "./Filter/Filter";
+import Swal from 'sweetalert2'
 
 const CONTACTS_KEY = 'contacts';
 
-class App extends Component {
-  state = {
-    contacts: [
-      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-    filter: '',
-  }
+const App = () => {
+  const [contacts, setContacts] = useState(() => {
+    const savedContacts = localStorage.getItem(CONTACTS_KEY);
+    return savedContacts ? JSON.parse(savedContacts) : 
+      [
+        { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+        { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+        { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+        { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+      ]
+    }
+  );
 
-  // Add contacts to localStorage
-  async componentDidMount() {
+  const [filter, setFilter] = useState('');
+
+  // Add contacts to localStorage 
+  // React Hooks: Instead of componentDidMount use useEffect hook
+  useEffect(() => {
     const data = localStorage.getItem(CONTACTS_KEY);
 
     try {
       if(data) {
-        this.setState({ contacts: JSON.parse(data)})
+        setContacts(JSON.parse(data));
       }
     } catch(error) {
       console.error(error);
     }
-  }
+  }, []);
 
   // Update contacts in localStorage
-  componentDidUpdate(_prevProps, prevState) {
-    if(prevState?.contacts.length !== this.state.contacts.length) {
-      localStorage.setItem(CONTACTS_KEY, JSON.stringify(this.state.contacts));
-    }
-  }
+  // React Hooks: Instead of componentDidUpdate use useEffect hook
+  useEffect(() => {
+    localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
+  }, [contacts]);
 
-  addContact = (newContact) => {
-    const { contacts } = this.state;
-
+  const addContact = (newContact) => {
     if (contacts.some(contact => contact.name === newContact.name)) {
-      alert(`${newContact.name} is already in contacts.`);
+      Swal.fire({
+        title: `${newContact.name} is already in list`,
+        icon: 'error',
+        confirmButtonText: 'Try again'
+      })
       return;
     }
 
-    this.setState(prevState => ({
-      contacts: [...prevState.contacts, newContact],
-    }));
+    setContacts(prevContacts => [...prevContacts, newContact]);
   };
 
-  changeFilter = (e) => {
-    this.setState({ filter: e.target.value });
+  const changeFilter = (e) => {
+    setFilter(e.target.value);
   };
 
-  deleteContact = (id) => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== id),
-    }));
+  const deleteContact = (id) => {
+    setContacts(prevContacts => prevContacts.filter(contact => contact.id !== id));
   };
 
-  getFilteredContacts = () => {
-    const { contacts, filter } = this.state;
+  const getFilteredContacts = () => {
     const normalizedFilter = filter.toLowerCase();
 
     return contacts.filter(contact =>
@@ -68,39 +70,34 @@ class App extends Component {
     );
   };
   
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        margin: 50,
+        padding: 20,
+        borderRadius: 10,
+        boxShadow: '0px 0px 10px 5px rgba(0, 0, 0, 0.1)',
+        fontSize: 40,
+        maxWidth: 400,
+        color: '#010101'
+      }}
+      className="phonebookSection"
+    >
+      <h1 style={{fontSize: 40}}>Phonebook</h1>
+      <ContactForm onSubmit={addContact}/>
 
-  render() {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'flex-start',
-          margin: 50,
-          padding: 20,
-          borderRadius: 10,
-          boxShadow: '0px 0px 10px 5px rgba(0, 0, 0, 0.1)',
-          fontSize: 40,
-          maxWidth: 400,
-          color: '#010101'
-        }}
-        className="phonebookSection"
-      >
-        <h1 style={{fontSize: 40}}>Phonebook</h1>
-        <ContactForm onSubmit={this.addContact}/>
-
-        <Filter filter={this.state.filter} handleFilterChange={this.changeFilter}/>
-        <ContactList 
-          contacts={this.getFilteredContacts()}
-          onDeleteContact={this.deleteContact}
-        />
+      <Filter filter={filter} handleFilterChange={changeFilter}/>
+      <ContactList 
+        contacts={getFilteredContacts()}
+        onDeleteContact={deleteContact}
+      />
        
-      </div>
-    );
-  }
-  
+    </div>
+  );
 };
-
 
 export default App;
